@@ -80,8 +80,9 @@ if uploaded_file is not None:
         img_array = keras.preprocessing.image.img_to_array(img_resized)
         img_tensor = np.expand_dims(img_array, axis=0) / 255.0
 
-        prediksi_normal = model_terbaik.predict(img_tensor, verbose=0)[0][0]
-        risiko_dasar_ai = 1.0 - prediksi_normal
+        # Langsung gunakan hasil AI karena model sudah dilatih untuk mendeteksi abnormalitas
+        prediksi_abnormal = model_terbaik.predict(img_tensor, verbose=0)[0][0]
+        risiko_dasar_ai = float(prediksi_abnormal)
         
         # Kalkulasi XAI
         heatmap = buat_gradcam_heatmap(img_tensor, model_terbaik, last_conv_layer_name)

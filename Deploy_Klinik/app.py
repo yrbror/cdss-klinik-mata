@@ -1,10 +1,10 @@
 import os
 import streamlit as st
-import traceback
 import numpy as np
 import cv2
 import tensorflow as tf
 import keras
+from keras.layers import Dense
 from PIL import Image
 
 # ==========================================
@@ -15,24 +15,23 @@ st.title("🏥 Sistem CDSS & Deteksi Retinopati Diabetik")
 st.markdown("Sistem pendukung keputusan klinis hybrid menggunakan AI (MobileNetV2) & Rule-Based Logic.")
 
 # ==========================================
-# 2. LOAD MODEL DENGAN PELACAK ERROR
+# 2. PENYARING BUG KERAS & LOAD MODEL
 # ==========================================
+# Ini adalah trik untuk mencegat dan membuang parameter yang membuat error
+class SafeDense(Dense):
+    def __init__(self, **kwargs):
+        kwargs.pop('quantization_config', None) # Buang parameter bermasalah
+        super().__init__(**kwargs)
+
 @st.cache_resource
 def load_ai_model():
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     model_path = os.path.join(BASE_DIR, 'model_retina_terbaik.keras')
-    # Menggunakan modul pure keras (Keras 3) untuk pembacaan terbaik
-    return keras.models.load_model(model_path)
+    # Load model dengan menyisipkan penyaring SafeDense
+    return keras.models.load_model(model_path, custom_objects={'Dense': SafeDense})
 
-# BLOK PENJEBAK ERROR
-try:
-    model_terbaik = load_ai_model()
-    last_conv_layer_name = 'out_relu'
-except Exception as e:
-    st.error("🚨 Sistem gagal memuat model AI. Berikut adalah pesan error yang disembunyikan oleh Streamlit:")
-    st.code(traceback.format_exc(), language="python")
-    st.info("💡 Abror, tolong salin (copy) semua teks bahasa Inggris di dalam kotak hitam di atas dan kirimkan ke saya!")
-    st.stop() # Menghentikan sistem agar tidak lanjut memproses gambar
+model_terbaik = load_ai_model()
+last_conv_layer_name = 'out_relu'
 
 def buat_gradcam_heatmap(img_array, model, last_conv_layer_name):
     grad_model = keras.models.Model([model.inputs], [model.get_layer(last_conv_layer_name).output, model.output])

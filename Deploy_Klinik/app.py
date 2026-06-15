@@ -110,7 +110,7 @@ if uploaded_file is not None:
 
     if risiko_akhir >= 0.50:
         st.error("🚨 **Diagnosis Sistem: TERINDIKASI ABNORMAL TINGGI**\n\n**Tindakan:** SEGERA RUJUK KE DOKTER SPESIALIS.")
-    elif risiko_akhir >= 0.40:
+    elif risiko_akhir >= 0.30:
         st.warning("⚠️ **Diagnosis Sistem: TERINDIKASI ABNORMAL (BORDERLINE)**\n\n**Tindakan:** Rujuk untuk observasi manual. Cek visualisasi peta Grad-CAM.")
     else:
         st.success("✅ **Diagnosis Sistem: NORMAL**\n\n**Tindakan:** Tidak ditemukan kelainan darurat.")

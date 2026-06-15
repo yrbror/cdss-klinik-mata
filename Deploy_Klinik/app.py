@@ -17,13 +17,10 @@ st.markdown("Sistem pendukung keputusan klinis hybrid menggunakan AI (MobileNetV
 # ==========================================
 @st.cache_resource
 def load_ai_model():
-    # Mengambil jalur folder tempat app.py ini berada
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    # Menggabungkan jalur folder dengan nama file model
     model_path = os.path.join(BASE_DIR, 'model_retina_terbaik.keras')
-    
-    # Hanya gunakan compile=False untuk Keras 2
-    return tf.keras.models.load_model(model_path, compile=False)
+    # Load model murni tanpa parameter tambahan karena sudah sesuai dengan Keras 3
+    return tf.keras.models.load_model(model_path)
 
 model_terbaik = load_ai_model()
 last_conv_layer_name = 'out_relu'
@@ -64,7 +61,6 @@ uploaded_file = st.sidebar.file_uploader("Unggah Foto Fundus Mata", type=["jpg",
 # 4. PEMROSESAN & OUTPUT
 # ==========================================
 if uploaded_file is not None:
-    # Tampilkan progress
     with st.spinner('Sistem sedang menganalisis gambar & data klinis...'):
         # Preprocessing gambar
         image = Image.open(uploaded_file).convert('RGB')
@@ -120,7 +116,6 @@ if uploaded_file is not None:
     with img_col1:
         st.image(image, caption="1. Foto Mata Asli", use_column_width=True)
     with img_col2:
-        # Tampilkan heatmap dengan colormap jet
         heatmap_colored = cv2.applyColorMap(np.uint8(255 * heatmap), cv2.COLORMAP_JET)
         heatmap_colored = cv2.cvtColor(heatmap_colored, cv2.COLOR_BGR2RGB)
         st.image(heatmap_colored, caption="2. Peta Fokus AI", use_column_width=True)

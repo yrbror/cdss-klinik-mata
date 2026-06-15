@@ -125,7 +125,8 @@ if uploaded_file is not None:
     with img_col1:
         st.image(image, caption="1. Foto Mata Asli", use_column_width=True)
     with img_col2:
-        heatmap_colored = cv2.applyColorMap(np.uint8(255 * heatmap), cv2.COLORMAP_JET)
+        # Gunakan heatmap_tinggi yang sudah halus, bukan heatmap mentah
+        heatmap_colored = cv2.applyColorMap(heatmap_tinggi, cv2.COLORMAP_JET)
         heatmap_colored = cv2.cvtColor(heatmap_colored, cv2.COLOR_BGR2RGB)
         st.image(heatmap_colored, caption="2. Peta Fokus AI", use_column_width=True)
     with img_col3:

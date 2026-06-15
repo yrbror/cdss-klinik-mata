@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 import numpy as np
 import cv2
@@ -16,8 +17,12 @@ st.markdown("Sistem pendukung keputusan klinis hybrid menggunakan AI (MobileNetV
 # ==========================================
 @st.cache_resource
 def load_ai_model():
-    return tf.keras.models.load_model('model_retina_terbaik.keras')
-
+    # Mengambil jalur folder tempat app.py ini berada
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    # Menggabungkan jalur folder dengan nama file model
+    model_path = os.path.join(BASE_DIR, 'model_retina_terbaik.keras')
+    
+    return tf.keras.models.load_model(model_path)
 model_terbaik = load_ai_model()
 last_conv_layer_name = 'out_relu'
 

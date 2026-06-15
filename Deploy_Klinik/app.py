@@ -4,7 +4,6 @@ import numpy as np
 import cv2
 import tensorflow as tf
 import keras
-from keras.layers import Dense
 from PIL import Image
 
 # ==========================================
@@ -15,20 +14,27 @@ st.title("🏥 Sistem CDSS & Deteksi Retinopati Diabetik")
 st.markdown("Sistem pendukung keputusan klinis hybrid menggunakan AI (MobileNetV2) & Rule-Based Logic.")
 
 # ==========================================
-# 2. PENYARING BUG KERAS & LOAD MODEL
+# 2. HACK: MONKEY PATCHING KERAS DENSE LAYER
 # ==========================================
-# Ini adalah trik untuk mencegat dan membuang parameter yang membuat error
-class SafeDense(Dense):
-    def __init__(self, **kwargs):
-        kwargs.pop('quantization_config', None) # Buang parameter bermasalah
-        super().__init__(**kwargs)
+# Menyusup langsung ke inti memori Keras untuk mengabaikan parameter bermasalah
+original_dense_init = keras.layers.Dense.__init__
 
+def patched_dense_init(self, *args, **kwargs):
+    kwargs.pop('quantization_config', None) # Buang sumber masalah secara diam-diam
+    original_dense_init(self, *args, **kwargs)
+
+# Terapkan operasi penyusupan ke sistem Keras
+keras.layers.Dense.__init__ = patched_dense_init
+
+# ==========================================
+# 3. LOAD MODEL
+# ==========================================
 @st.cache_resource
 def load_ai_model():
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     model_path = os.path.join(BASE_DIR, 'model_retina_terbaik.keras')
-    # Load model dengan menyisipkan penyaring SafeDense
-    return keras.models.load_model(model_path, custom_objects={'Dense': SafeDense})
+    # Load model berjalan normal karena inti Keras sudah kita "vaksinasi"
+    return keras.models.load_model(model_path)
 
 model_terbaik = load_ai_model()
 last_conv_layer_name = 'out_relu'
@@ -55,7 +61,7 @@ def gabungkan_heatmap(img_array, heatmap, alpha=0.4):
     return heatmap, superimposed_img
 
 # ==========================================
-# 3. TAHAP INPUT (SIDEBAR)
+# 4. TAHAP INPUT (SIDEBAR)
 # ==========================================
 st.sidebar.header("Data Klinis Pasien")
 nama_pasien = st.sidebar.text_input("Nama Pasien", "Pasien A")
@@ -66,7 +72,7 @@ riwayat_diabetes = st.sidebar.selectbox("Riwayat Diabetes", ["Tidak", "Ya"])
 uploaded_file = st.sidebar.file_uploader("Unggah Foto Fundus Mata", type=["jpg", "png", "jpeg"])
 
 # ==========================================
-# 4. PEMROSESAN & OUTPUT
+# 5. PEMROSESAN & OUTPUT
 # ==========================================
 if uploaded_file is not None:
     with st.spinner('Sistem sedang menganalisis gambar & data klinis...'):

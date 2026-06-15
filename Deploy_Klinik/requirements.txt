@@ -1,5 +1,5 @@
 streamlit
-tensorflow==2.15.0
+tensorflow-cpu
 opencv-python-headless
 numpy
 matplotlib

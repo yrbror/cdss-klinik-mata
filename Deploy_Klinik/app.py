@@ -16,14 +16,12 @@ st.markdown("Sistem pendukung keputusan klinis hybrid menggunakan AI (MobileNetV
 # ==========================================
 # 2. HACK: MONKEY PATCHING KERAS DENSE LAYER
 # ==========================================
-# Menyusup langsung ke inti memori Keras untuk mengabaikan parameter bermasalah
 original_dense_init = keras.layers.Dense.__init__
 
 def patched_dense_init(self, *args, **kwargs):
-    kwargs.pop('quantization_config', None) # Buang sumber masalah secara diam-diam
+    kwargs.pop('quantization_config', None) 
     original_dense_init(self, *args, **kwargs)
 
-# Terapkan operasi penyusupan ke sistem Keras
 keras.layers.Dense.__init__ = patched_dense_init
 
 # ==========================================
@@ -33,7 +31,6 @@ keras.layers.Dense.__init__ = patched_dense_init
 def load_ai_model():
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     model_path = os.path.join(BASE_DIR, 'model_retina_terbaik.keras')
-    # Load model berjalan normal karena inti Keras sudah kita "vaksinasi"
     return keras.models.load_model(model_path)
 
 model_terbaik = load_ai_model()
@@ -53,12 +50,13 @@ def buat_gradcam_heatmap(img_array, model, last_conv_layer_name):
     return heatmap.numpy()
 
 def gabungkan_heatmap(img_array, heatmap, alpha=0.4):
-    # Menggunakan interpolasi CUBIC agar gradasi warna sangat halus saat ditarik ke resolusi tinggi
+    # Menggunakan INTER_CUBIC agar gradasi warna sangat halus
     heatmap_resized = cv2.resize(heatmap, (img_array.shape[1], img_array.shape[0]), interpolation=cv2.INTER_CUBIC)
     heatmap_resized = np.uint8(255 * heatmap_resized)
     heatmap_colored = cv2.applyColorMap(heatmap_resized, cv2.COLORMAP_JET)
     superimposed_img = heatmap_colored * alpha + img_array
     superimposed_img = np.clip(superimposed_img, 0, 255).astype('uint8')
+    # Mengembalikan 2 nilai: heatmap_tinggi dan gambar_gabungan
     return heatmap_resized, superimposed_img
 
 # ==========================================
@@ -85,9 +83,12 @@ if uploaded_file is not None:
         prediksi_normal = model_terbaik.predict(img_tensor, verbose=0)[0][0]
         risiko_dasar_ai = 1.0 - prediksi_normal
         
+        # Kalkulasi XAI
         heatmap = buat_gradcam_heatmap(img_tensor, model_terbaik, last_conv_layer_name)
-        img_asli_cv = np.array(img_resized) 
-        _, gambar_gabungan = gabungkan_heatmap(img_asli_cv, heatmap)
+        img_asli_cv = np.array(image) 
+        
+        # ---> DI SINI VARIABEL heatmap_tinggi DICIPTAKAN <---
+        heatmap_tinggi, gambar_gabungan = gabungkan_heatmap(img_asli_cv, heatmap)
 
         risiko_akhir = risiko_dasar_ai
         catatan_medis = []
@@ -125,7 +126,7 @@ if uploaded_file is not None:
     with img_col1:
         st.image(image, caption="1. Foto Mata Asli", use_column_width=True)
     with img_col2:
-        # Gunakan heatmap_tinggi yang sudah halus, bukan heatmap mentah
+        # ---> DI SINI VARIABEL heatmap_tinggi DIPANGGIL <---
         heatmap_colored = cv2.applyColorMap(heatmap_tinggi, cv2.COLORMAP_JET)
         heatmap_colored = cv2.cvtColor(heatmap_colored, cv2.COLOR_BGR2RGB)
         st.image(heatmap_colored, caption="2. Peta Fokus AI", use_column_width=True)

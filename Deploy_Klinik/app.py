@@ -53,12 +53,13 @@ def buat_gradcam_heatmap(img_array, model, last_conv_layer_name):
     return heatmap.numpy()
 
 def gabungkan_heatmap(img_array, heatmap, alpha=0.4):
-    heatmap = cv2.resize(heatmap, (img_array.shape[1], img_array.shape[0]))
-    heatmap = np.uint8(255 * heatmap)
-    heatmap = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
-    superimposed_img = heatmap * alpha + img_array
+    # Menggunakan interpolasi CUBIC agar gradasi warna sangat halus saat ditarik ke resolusi tinggi
+    heatmap_resized = cv2.resize(heatmap, (img_array.shape[1], img_array.shape[0]), interpolation=cv2.INTER_CUBIC)
+    heatmap_resized = np.uint8(255 * heatmap_resized)
+    heatmap_colored = cv2.applyColorMap(heatmap_resized, cv2.COLORMAP_JET)
+    superimposed_img = heatmap_colored * alpha + img_array
     superimposed_img = np.clip(superimposed_img, 0, 255).astype('uint8')
-    return heatmap, superimposed_img
+    return heatmap_resized, superimposed_img
 
 # ==========================================
 # 4. TAHAP INPUT (SIDEBAR)

@@ -81,7 +81,7 @@ if uploaded_file is not None:
 
         # KITA KEMBALIKAN LOGIKA KE VERSI GOOGLE COLAB:
         prediksi_normal = model_terbaik.predict(img_tensor, verbose=0)[0][0]
-        risiko_dasar_ai = float(1.0 + prediksi_normal)
+        risiko_dasar_ai = float
         
         # Kalkulasi XAI
         heatmap = buat_gradcam_heatmap(img_tensor, model_terbaik, last_conv_layer_name)

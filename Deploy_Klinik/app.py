@@ -20,7 +20,7 @@ def load_ai_model():
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     model_path = os.path.join(BASE_DIR, 'model_retina_terbaik.keras')
     # Load model murni tanpa parameter tambahan karena sudah sesuai dengan Keras 3
-    return tf.keras.models.load_model(model_path)
+    return tf.keras.models.load_model(model_path, compile=False, safe_mode=False)
 
 model_terbaik = load_ai_model()
 last_conv_layer_name = 'out_relu'

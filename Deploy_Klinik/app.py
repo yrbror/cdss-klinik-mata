@@ -22,7 +22,7 @@ def load_ai_model():
     # Menggabungkan jalur folder dengan nama file model
     model_path = os.path.join(BASE_DIR, 'model_retina_terbaik.keras')
     
-    return tf.keras.models.load_model(model_path)
+    return tf.keras.models.load_model(model_path, compile=False)
 model_terbaik = load_ai_model()
 last_conv_layer_name = 'out_relu'
 

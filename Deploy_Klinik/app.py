@@ -1,8 +1,10 @@
 import os
 import streamlit as st
+import traceback
 import numpy as np
 import cv2
 import tensorflow as tf
+import keras
 from PIL import Image
 
 # ==========================================
@@ -13,20 +15,27 @@ st.title("🏥 Sistem CDSS & Deteksi Retinopati Diabetik")
 st.markdown("Sistem pendukung keputusan klinis hybrid menggunakan AI (MobileNetV2) & Rule-Based Logic.")
 
 # ==========================================
-# 2. LOAD MODEL (Di-cache agar tidak loading terus)
+# 2. LOAD MODEL DENGAN PELACAK ERROR
 # ==========================================
 @st.cache_resource
 def load_ai_model():
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     model_path = os.path.join(BASE_DIR, 'model_retina_terbaik.keras')
-    # Load model murni tanpa parameter tambahan karena sudah sesuai dengan Keras 3
-    return tf.keras.models.load_model(model_path, compile=False, safe_mode=False)
+    # Menggunakan modul pure keras (Keras 3) untuk pembacaan terbaik
+    return keras.models.load_model(model_path)
 
-model_terbaik = load_ai_model()
-last_conv_layer_name = 'out_relu'
+# BLOK PENJEBAK ERROR
+try:
+    model_terbaik = load_ai_model()
+    last_conv_layer_name = 'out_relu'
+except Exception as e:
+    st.error("🚨 Sistem gagal memuat model AI. Berikut adalah pesan error yang disembunyikan oleh Streamlit:")
+    st.code(traceback.format_exc(), language="python")
+    st.info("💡 Abror, tolong salin (copy) semua teks bahasa Inggris di dalam kotak hitam di atas dan kirimkan ke saya!")
+    st.stop() # Menghentikan sistem agar tidak lanjut memproses gambar
 
 def buat_gradcam_heatmap(img_array, model, last_conv_layer_name):
-    grad_model = tf.keras.models.Model([model.inputs], [model.get_layer(last_conv_layer_name).output, model.output])
+    grad_model = keras.models.Model([model.inputs], [model.get_layer(last_conv_layer_name).output, model.output])
     with tf.GradientTape() as tape:
         last_conv_layer_output, preds = grad_model(img_array)
         class_channel = preds[:, 0]
@@ -62,22 +71,18 @@ uploaded_file = st.sidebar.file_uploader("Unggah Foto Fundus Mata", type=["jpg",
 # ==========================================
 if uploaded_file is not None:
     with st.spinner('Sistem sedang menganalisis gambar & data klinis...'):
-        # Preprocessing gambar
         image = Image.open(uploaded_file).convert('RGB')
         img_resized = image.resize((224, 224))
-        img_array = tf.keras.preprocessing.image.img_to_array(img_resized)
+        img_array = keras.preprocessing.image.img_to_array(img_resized)
         img_tensor = np.expand_dims(img_array, axis=0) / 255.0
 
-        # Prediksi AI
         prediksi_normal = model_terbaik.predict(img_tensor, verbose=0)[0][0]
         risiko_dasar_ai = 1.0 - prediksi_normal
         
-        # Kalkulasi XAI
         heatmap = buat_gradcam_heatmap(img_tensor, model_terbaik, last_conv_layer_name)
-        img_asli_cv = np.array(img_resized) # Konversi PIL ke Numpy
+        img_asli_cv = np.array(img_resized) 
         _, gambar_gabungan = gabungkan_heatmap(img_asli_cv, heatmap)
 
-        # Kalkulasi Rule-Based CDSS
         risiko_akhir = risiko_dasar_ai
         catatan_medis = []
         
@@ -90,7 +95,6 @@ if uploaded_file is not None:
             
         risiko_akhir = min(risiko_akhir, 1.0)
 
-    # Tampilkan Hasil Teks
     st.markdown("---")
     st.subheader(f"Hasil Screening: Sdr/i {nama_pasien}")
     
@@ -108,7 +112,6 @@ if uploaded_file is not None:
     if catatan_medis:
         st.info("**Catatan Evaluasi Klinis:**\n" + "\n".join([f"- {cat}" for cat in catatan_medis]))
 
-    # Tampilkan Hasil Visualisasi
     st.markdown("---")
     st.subheader("Visualisasi Explainable AI (Grad-CAM)")
     img_col1, img_col2, img_col3 = st.columns(3)

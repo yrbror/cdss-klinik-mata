@@ -56,7 +56,6 @@ def gabungkan_heatmap(img_array, heatmap, alpha=0.4):
     heatmap_colored = cv2.applyColorMap(heatmap_resized, cv2.COLORMAP_JET)
     superimposed_img = heatmap_colored * alpha + img_array
     superimposed_img = np.clip(superimposed_img, 0, 255).astype('uint8')
-    # Mengembalikan 2 nilai: heatmap_tinggi dan gambar_gabungan
     return heatmap_resized, superimposed_img
 
 # ==========================================
@@ -80,15 +79,14 @@ if uploaded_file is not None:
         img_array = keras.preprocessing.image.img_to_array(img_resized)
         img_tensor = np.expand_dims(img_array, axis=0) / 255.0
 
-        # Langsung gunakan hasil AI karena model sudah dilatih untuk mendeteksi abnormalitas
-        prediksi_abnormal = model_terbaik.predict(img_tensor, verbose=0)[0][0]
-        risiko_dasar_ai = float(prediksi_abnormal)
+        # KITA KEMBALIKAN LOGIKA KE VERSI GOOGLE COLAB:
+        prediksi_normal = model_terbaik.predict(img_tensor, verbose=0)[0][0]
+        risiko_dasar_ai = float(1.0 - prediksi_normal)
         
         # Kalkulasi XAI
         heatmap = buat_gradcam_heatmap(img_tensor, model_terbaik, last_conv_layer_name)
         img_asli_cv = np.array(image) 
         
-        # ---> DI SINI VARIABEL heatmap_tinggi DICIPTAKAN <---
         heatmap_tinggi, gambar_gabungan = gabungkan_heatmap(img_asli_cv, heatmap)
 
         risiko_akhir = risiko_dasar_ai
@@ -127,7 +125,6 @@ if uploaded_file is not None:
     with img_col1:
         st.image(image, caption="1. Foto Mata Asli", use_column_width=True)
     with img_col2:
-        # ---> DI SINI VARIABEL heatmap_tinggi DIPANGGIL <---
         heatmap_colored = cv2.applyColorMap(heatmap_tinggi, cv2.COLORMAP_JET)
         heatmap_colored = cv2.cvtColor(heatmap_colored, cv2.COLOR_BGR2RGB)
         st.image(heatmap_colored, caption="2. Peta Fokus AI", use_column_width=True)
